@@ -160,14 +160,139 @@ const logoutUser = asyncHandler(async (req, res) => {
         secure: true
     }
     return res
-    .status(200)
-    .clearCookie("accessTOken", options)
-    .clearCookie("refreshTOken", options)
-    .json(new apiResponse(200, {}, "User logget Out "))
+        .status(200)
+        .clearCookie("accessTOken", options)
+        .clearCookie("refreshTOken", options)
+        .json(new apiResponse(200, {}, "User logget Out "))
 })
+
+const setNewPassword = asyncHandler(async (res, req) => {
+    const { oldPassword, newPassword, confPassword } = req.body
+
+    if (newPassword === confPassword) {
+        throw new apiError(400, "password not match")
+    }
+
+    const user = await User.findById(req.user?._id)
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+    if (!isPasswordCorrect) {
+        throw new apiError(400, "password does not match")
+
+        user.password = newPassword
+        await user.save({ validateBeforeSave: false })
+
+        return res
+            .status(200)
+            .json(200, {}, "password is changed successfully")
+    }
+})
+
+const getCurrentUser = asyncHandler(async (res, req) => {
+    return res
+        .status(200)
+        .json(400, req.user, "current user fetch successfully")
+
+})
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+    const { fullname, email, username } = req.body
+
+    if (!fullname || !email || !username) {
+        throw new apiError(400, "this field is required ")
+
+    }
+
+    User.findByIdAndUpdate(req
+        .user?._id,
+        {
+            $set: {
+                fullname,
+                email,
+                username
+            }
+        },
+        { new: true }
+
+    ).select("-password")
+
+    return res
+        .status(200)
+        .json(new apiResponse(200, user, "account details updated successfully"))
+
+})
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+
+    const avatarLocalPath = req.file?.path
+
+    if (!avatarLocalPath) {
+        throw apiError(400,"avatar file is miising")
+    }
+
+    const avatar = await uploadOnCloudinary
+    {avatarLocalPath}
+     
+    if (!avatar) {
+        throw new apiError(400, "error whie uploading")
+    }
+
+    await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                avatar = avatar.url
+            }
+        },
+        {new: true}
+    ).select("-password")
+
+    return res
+    .status(200)
+    .json(
+        new apiResponse( 200, "Avatar image is uploaded ")
+    ) 
+})
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+
+    const coverImageLocalPath = req.file?.path
+
+    if (!coverImageLocalPath) {
+        throw apiError(400,"avatar file is miising")
+    }
+
+    const avatar = await uploadOnCloudinary
+    {coverImageLocalPath}
+     
+    if (!avatar) {
+        throw new apiError(400, "error whie uploading")
+    }
+
+     const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                avatar = avatar.url
+            }
+        },
+        {new: true}
+    ).select("-password")
+
+    return res
+    .status(200)
+    .json(
+        new apiResponse( 200, "Cover image is uploaded ")
+    ) 
+})
+
 
 export {
     registerUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    getCurrentUser,
+    setNewPassword,
+    updateAccountDetails,
+    updateUserAvatar
 }
