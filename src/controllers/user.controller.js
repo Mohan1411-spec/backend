@@ -169,9 +169,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     }
     return res
         .status(200)
-<<<<<<< HEAD
-        .clearCookie("accessToken", options)
-        .clearCookie("refreshToken", options)
+        .clearCookie("accessTOken", options)
+        .clearCookie("refreshTOken", options)
         .json(new apiResponse(200, {}, "User logget Out "))
 })
 
@@ -221,12 +220,6 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
         )
      }
     
-
-=======
-        .clearCookie("accessTOken", options)
-        .clearCookie("refreshTOken", options)
-        .json(new apiResponse(200, {}, "User logget Out "))
->>>>>>> 052339378c1c6da98a63a6e6fe24caf53e03274a
 })
 
 const setNewPassword = asyncHandler(async (res, req) => {
@@ -354,12 +347,10 @@ export {
     registerUser,
     loginUser,
     logoutUser,
-<<<<<<< HEAD
-    refreshAccessToken
-=======
+    refreshAccessToken,
     getCurrentUser,
     setNewPassword,
     updateAccountDetails,
     updateUserAvatar
->>>>>>> 052339378c1c6da98a63a6e6fe24caf53e03274a
 }
+
