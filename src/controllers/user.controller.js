@@ -9,17 +9,21 @@ const generateAccessAndRefreshToken = async (userId) => {
 
     try {
         const user = await User.findById(userId)
-        const generateAccessToken = user.generateAccessToken()
-        const generateRefreshToken = user.generateRefreshToken()
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        console.log("accessToken:", accessToken);
+        console.log("refreshToken:", refreshToken);
 
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
 
-        return { accessToken, refreshToken }
-    } catch (error) {
-        throw new error(500, "something went wrong while generating access and refresh token ")
+        return { accessToken, refreshToken };
+
+    } catch (err) {
+        console.error(err);
     }
-}
+};
 
 const registerUser = asyncHandler(async (req, res, next) => {
     //user detail from frontend
@@ -103,15 +107,15 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { email, username, password } = req.body
 
-    if (!!username || !!email) {
+    if (!!username && !!email) {
         throw new apiError(400, " username or email is required ")
     }
 
-    const User = await User.findOne({
+    const user = await User.findOne({
         $or: [{ username }, { email }]
     })
 
-    if (!User) {
+    if (!user) {
         throw new apiError(404, "user is not register")
     }
 
@@ -121,10 +125,14 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new apiError(404, "password is incorrect")
     }
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)
+    const { accessToken, refreshToken } =
+        await generateAccessAndRefreshToken(user._id)
 
-    await user.findById(user._id).select(
-        "-password -refreshTOken"
+    console.log("Generated accessToken:", accessToken);
+    console.log("Generated refreshToken:", refreshToken);
+
+    const loggedInUser = await User.findById(user._id).select(
+        "-password -refreshToken"
     )
     const options = {
         httpOnly: true,
@@ -146,9 +154,9 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async (req, res) => {
 
-    await user.findByIdAndUpdate(req.user._id, {
-        $set: {
-            refreshToken: undefined
+    await User.findByIdAndUpdate(req.user._id, {
+        $unset: {
+            refreshToken: 1
         }
     },
         {
@@ -166,7 +174,55 @@ const logoutUser = asyncHandler(async (req, res) => {
         .json(new apiResponse(200, {}, "User logget Out "))
 })
 
-const setNewPassword = asyncHandler(async (res, req) => {
+const refreshAccessToken = asyncHandler(async(req, res) => {
+
+   const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+
+    if ( !incomingRefreshToken) {
+        throw new apiError(401, "unauthorrized request" )
+    }
+
+     try {
+        const decodedToken = jwt.verify(
+           incomingRefreshToken,
+           process.env.REFRESH_TOKEN_SECRET
+       )
+       const user = await User.findById(decodedToken?._id)
+   
+       if (!user) {
+           throw new apiError(401, "invalid Refresh token")
+       }
+   
+       if(incomingRefreshToken !== user?.refreshToken){
+           throw new apiError(401, "refresh token expired")
+   
+       }
+   
+       const options ={
+           httpOnly: true,
+           secure:true
+       }
+   
+       const{accessToken, newRefreshToken} = await generateAccessAndRefreshToken(user._id)
+   
+       return res
+       .status(200)
+       .cookie("accessToken", accessToken, options)
+       .cookie("refreshToken", newRefreshToken, options)
+       .json(
+           200,
+           {accessToken, generateRefreshToken: newRefreshToken},
+           "access token refreshed"
+       )
+     } catch (error) {
+        throw new apiError(401, error?.message ||
+            "invalid refresh token"
+        )
+     }
+    
+})
+
+const setNewPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword, confPassword } = req.body
 
     if (newPassword === confPassword) {
@@ -188,7 +244,7 @@ const setNewPassword = asyncHandler(async (res, req) => {
     }
 })
 
-const getCurrentUser = asyncHandler(async (res, req) => {
+const getCurrentUser = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(400, req.user, "current user fetch successfully")
@@ -351,9 +407,11 @@ export {
     registerUser,
     loginUser,
     logoutUser,
+    refreshAccessToken,
     getCurrentUser,
     setNewPassword,
     updateAccountDetails,
     updateUserAvatar,
     userProfileDetails
 }
+
