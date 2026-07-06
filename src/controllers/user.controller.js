@@ -286,6 +286,66 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     ) 
 })
 
+const userProfileDetails = asyncHandler(async(req, res) =>{
+
+    const { username} = req.params
+
+    if( !username ) {
+        throw new apiError(400, "username is required")
+    }
+
+     const user = await User.aggregate([
+        {
+            $match: username
+        },
+        {
+            $lookup: {
+    
+                    from : "subscriptions",
+                    localfield: "._id",
+                    foreignField: "channel",
+                    as: "subscribers"
+
+            }
+        },
+        {
+            $lookup:{
+                from: "subscriptions",
+                localField: "._id",
+                foreignField: "subscriber",
+                as:"subscribedTo"
+            }
+        },
+        {
+            $addFields:{
+                subscribersCount:{
+                    $size: "$subscribers"
+                }
+            },
+
+            channelssubscribedCount:{
+                $size: "$subscribedTo"
+            },
+
+            isSubscribed:{
+                $cond: {
+                    if:{
+                        $in: [req.user?._id, "$subscribers.subscriber"]
+                    }
+                }
+            }
+
+        },
+    ])
+
+    return res
+    .status(200)
+    .json(
+        new apiResponse(200, user, "User profile details fetched successfully")
+    )
+
+})
+
 
 export {
     registerUser,
@@ -294,5 +354,6 @@ export {
     getCurrentUser,
     setNewPassword,
     updateAccountDetails,
-    updateUserAvatar
+    updateUserAvatar,
+    userProfileDetails
 }
