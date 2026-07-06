@@ -115,7 +115,7 @@ const loginUser = asyncHandler(async (req, res) => {
         $or: [{ username }, { email }]
     })
 
-    if (!User) {
+    if (!user) {
         throw new apiError(404, "user is not register")
     }
 
@@ -222,7 +222,7 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
     
 })
 
-const setNewPassword = asyncHandler(async (res, req) => {
+const setNewPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword, confPassword } = req.body
 
     if (newPassword === confPassword) {
@@ -244,7 +244,7 @@ const setNewPassword = asyncHandler(async (res, req) => {
     }
 })
 
-const getCurrentUser = asyncHandler(async (res, req) => {
+const getCurrentUser = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(400, req.user, "current user fetch successfully")
