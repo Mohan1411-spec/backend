@@ -143,7 +143,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 })
 
-const publishAVideo = asyncHandler(async (req, res) => {
+const publishVideo = asyncHandler(async (req, res) => {
     const { title, description } = req.body
     // TODO:
     // 1. Validate title and description.
@@ -297,17 +297,17 @@ const updateVideo = asyncHandler(async (req, res) => {
     if (description) video.description = description;
     if (thumbnail) video.thumbnail = thumbnailLocalPath.url;
 
-    await video.save({validateBeforeSave: flase});
+    await video.save({ validateBeforeSave: flase });
 
     return res
-    .status(200)
-    .json(
-        new apiResponse(
-            200, 
-            video,
-            "Video is updated is successfully"
+        .status(200)
+        .json(
+            new apiResponse(
+                200,
+                video,
+                "Video is updated is successfully"
+            )
         )
-    )
 
 
 
@@ -342,34 +342,75 @@ const deleteVideo = asyncHandler(async (req, res) => {
         throw new apiError(400, "video is not found")
     }
 
-    if(video.owner.toString() !== req.user._id.toString()) {
+    if (video.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(400, "owner is not logged in")
     }
 
     const video = await Video.findByIdAndDelete(videoId)
-    
-    if(!video) {
-        throw new apiError (400, "video is not delete successfully")
+
+    if (!video) {
+        throw new apiError(400, "video is not delete successfully")
     }
 
-    return res 
-    .status(200)
-    .json(
-        new apiResponse(
-            200,
-            video,
-            "video is not deleted"
+    return res
+        .status(200)
+        .json(
+            new apiResponse(
+                200,
+                video,
+                "video is not deleted"
+            )
         )
-    )
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+
+    // TODO 1: Validate the videoId
+
+    // TODO 2: Find the video by videoId
+
+    // TODO 3: If the video doesn't exist, throw an error
+
+    // TODO 4: Check if the logged-in user is the owner of the video
+
+    // TODO 5: Toggle the isPublished field (true ↔ false)
+
+    // TODO 6: Save the updated video
+
+    if (mongoose.Types.ObjectId.isValid(videoId)) {
+        throw new apiError(400, "video not found through these id")
+    }
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new apiError(400, "video not exist")
+    }
+
+    if (video.owner.toString() !== req.user._id.toString()) {
+        throw new apiError(400, "owner is not logged in")
+    }
+
+    video.isPublished = !video.isPublished;
+
+    await video.save({ validateBeforeSave: false });
+
+    return res
+        .status(200)
+        .json(
+            new apiResponse(
+                200,
+                video,
+                `Video ${video.isPublished ? "Published" : "unpublished"} successfully`
+            )
+        )
+
 })
 
 export {
     getAllVideos,
-    publishAVideo,
+    publishVideo,
     getVideoById,
     updateVideo,
     deleteVideo,
