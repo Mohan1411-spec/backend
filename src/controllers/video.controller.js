@@ -2,7 +2,7 @@ import mongoose, { isValidObjectId } from "mongoose"
 import { Video } from "../models/video.model.js"
 import { User } from "../models/user.model.js"
 import { ApiError } from "../utils/ApiError.js"
-import { apiResponse, ApiResponse } from "../utils/ApiResponse.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { apiError } from "../utils/apiErrors.js"
@@ -56,90 +56,90 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
     // Validate query parameters (page, limit, sort values).
 
-//validate page
-if (isNaN(page) || page < 1) {
-    throw new apiError(400, "Page must in positive number!!")
-}
+    //validate page
+    if (isNaN(page) || page < 1) {
+        throw new apiError(400, "Page must in positive number!!")
+    }
 
-//Validate page limit
+    //Validate page limit
 
-if (isNaN(limit) || limit < 1) {
-    throw new apiError(400, "page limit must me in positive number")
-}
+    if (isNaN(limit) || limit < 1) {
+        throw new apiError(400, "page limit must me in positive number")
+    }
 
-//validate sort type 
+    //validate sort type 
 
-const allowedSortType = ["asc"]
+    const allowedSortType = ["asc"]
 
-if (!allowedSortType) {
-    throw new apiError(400, "Invalid sort type")
-}
+    if (!allowedSortType) {
+        throw new apiError(400, "Invalid sort type")
+    }
 
-//validate sort by
+    //validate sort by
 
-const allowedSortBy = ["created by"]
+    const allowedSortBy = ["created by"]
 
-if (!allowedSortBy) {
-    throw new apiError(400, "invalid sort by")
-}
+    if (!allowedSortBy) {
+        throw new apiError(400, "invalid sort by")
+    }
 
-//  Create a filter object for searching videos.
+    //  Create a filter object for searching videos.
 
-//filter by owner
+    //filter by owner
 
-const filter = {}
+    const filter = {}
 
-if (userId) {
-    filter.owner = userId;
-}
+    if (userId) {
+        filter.owner = userId;
+    }
 
 
 
-//Create a sort object based on sortBy and sortType.
+    //Create a sort object based on sortBy and sortType.
 
-const sortOption = {}
+    const sortOption = {}
 
-if (sortBy) {
-    sortOption[sortBy] = sortType === "asc" ? 1 : -1
-}
-else {
-    sortOption.createdAt = -1
-}
+    if (sortBy) {
+        sortOption[sortBy] = sortType === "asc" ? 1 : -1
+    }
+    else {
+        sortOption.createdAt = -1
+    }
 
-// Calculate pagination (skip = (page - 1) * limit).
+    // Calculate pagination (skip = (page - 1) * limit).
 
-const pageNumber = parseInt(page, 10);
-const limitNumber = parseInt(page, 10)
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(page, 10)
 
-//calculate document to skip
+    //calculate document to skip
 
-const skip = (pageNumber - 1) * limitNumber
+    const skip = (pageNumber - 1) * limitNumber
 
-//Fetch videos from the database with filter, sort, skip, and limit
+    //Fetch videos from the database with filter, sort, skip, and limit
 
-const video = await Video.find({ filter })
-    .populate("owner", "username, fullname, avatar")
-    .sort(sortOption)
-    .skip(skip)
-    .limit(limitNumber);
+    const video = await Video.find({ filter })
+        .populate("owner", "username, fullname, avatar")
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limitNumber);
 
-//count total videos
+    //count total videos
 
-const totalVideos = await Video.countDocument(filter)
-const totalPages = Math.ceil(totalVideos / limitNumber);
+    const totalVideos = await Video.countDocument(filter)
+    const totalPages = Math.ceil(totalVideos / limitNumber);
 
-return res
-    .status(200)
-    .json(
-        new apiResponse(
-            200,
-            video,
-            totalVideos,
-            currentpage,
-            totalPages,
-            limitNumber
+    return res
+        .status(200)
+        .json(
+            new apiResponse(
+                200,
+                video,
+                totalVideos,
+                currentpage,
+                totalPages,
+                limitNumber
+            )
         )
-    )
 
 })
 
@@ -174,7 +174,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     if (!title || !description) {
         throw new apiError(400, "check title and description")
     }
-//upload video in cloudinary
+    //upload video in cloudinary
     const videoLocalPath = req.file?.video?.[0]?.path
 
     console.log(req.body)
@@ -193,119 +193,174 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const videoUrl = videoUpload.url;
     const publicId = videoUpload.public_id;
     const duration = videoUpload.duration;
-//create document for video object in db
+    //create document for video object in db
     const video = await Video.create({
         title,
         description,
-        video:videoUpload.url,
+        video: videoUpload.url,
         duration: videoUpload.duration,
-        owner:req.user._id
+        owner: req.user._id
     })
 
-    if(!video) {
+    if (!video) {
         throw new apiError(400, " something went wrong while creating video")
     }
 
     return res
-    .status(200)
-    .json(
-        new apiResponse(
-            200,
-            video,
-            "video published successfully "
+        .status(200)
+        .json(
+            new apiResponse(
+                200,
+                "video published successfully "
+            )
         )
-    )
-
-
-
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
 
-    // 1. Validate videoId.
+    // TODO 1: Validate the videoId (check if it's a valid MongoDB ObjectId)
 
-    // 2. Find video by id from database.
+    // TODO 2: Find the video in the database using the videoId
 
-    // 3. Populate owner details if required.
+    // TODO 3: If the video doesn't exist, throw an appropriate error
 
-    // 4. Check if video exists.
-
-    // 5. Return video details in response.
+    // TODO 4: Return the video with a success response    
 
     if (!videoId) {
-        throw new apiError(400, "video not found!!")
+        throw new apiError(400, "Enter a valid video id")
     }
 
     const video = await Video.findById(videoId)
-    .populate("owner","username, fullname, avatar" )
 
     if (!video) {
         throw new apiError(400, "video not found")
     }
 
     return res
-    .status(200)
-    .json(
-        new apiResponse(
-            200,
-            video, 
-            "video fetch successfully"
+        .status(200)
+        .json(
+            new apiResponse(200,
+                video,
+                "video find successfully"
+            )
         )
-    )
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    // 1. Validate videoId.
+    // TODO 1: Validate the videoId
 
-    // 2. Get updated fields from req.body (title, description).
+    // TODO 2: Get the title and description from the request body
 
-    // 3. Check if video exists.
+    // TODO 3: Get the thumbnail path from req.file (if a new thumbnail is uploaded)
 
-    // 4. Check if logged-in user is the owner of the video.
+    // TODO 4: Find the video by videoId
 
-    // 5. If thumbnail is provided, upload new thumbnail to Cloudinary.
+    // TODO 5: If the video doesn't exist, throw an error
 
-    // 6. Update video details in database.
+    // TODO 6: Check if the logged-in user is the owner of the video
 
-    // 7. Remove old thumbnail from Cloudinary (if replaced).
+    // TODO 7: If a new thumbnail is uploaded, upload it to Cloudinary
 
-    // 8. Check if video was updated successfully.
+    // TODO 8: Update the title, description, and thumbnail fields
 
-    // 9. Return updated video response.
+    // TODO 9: Save the updated video
 
-    if (!videoId) {
-        throw new apiError(400, "video id not found")
+    // TODO 10: Return the updated video with a success response
+
+    if (mongoose.Type.ObjectId.isValid(videoId)) {
+        throw new apiError(400, "video not found")
     }
 
-    const {title, discription} = req.body
+    const { title, description } = req.body
 
-    const update = {}
-
-    if(title) {
-        updateAccountDetails.title = title;
-    }
-
-    if (discription) {
-        updateData.discription = discription
-    } 
+    const thumbnailLocalPath = req.file?.path;
 
     const video = await Video.findById(videoId)
 
     if (!video) {
-        throw new apiError(400, "video not exist")
+        throw new apiError(400, "video is not exist")
     }
 
-    if (video.owner.toString !== req.user._id.toString) {
-        throw new apiError(400, "logged in user is not thr owner of this video")
+    if (video.owner.toString() !== req.user._id.toString()) {
+        throw new apiError(400, "Owner is not login")
     }
-         
+
+    let = thumbnail;
+
+    if (thumbnailLocalPath) {
+        thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+    }
+
+    if (title) video.title = title;
+    if (description) video.description = description;
+    if (thumbnail) video.thumbnail = thumbnailLocalPath.url;
+
+    await video.save({validateBeforeSave: flase});
+
+    return res
+    .status(200)
+    .json(
+        new apiResponse(
+            200, 
+            video,
+            "Video is updated is successfully"
+        )
+    )
+
+
+
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: delete video
+
+    // TODO 1: Validate the videoId
+
+    // TODO 2: Find the video by videoId
+
+    // TODO 3: If the video doesn't exist, throw an error
+
+    // TODO 4: Check if the logged-in user is the owner of the video
+
+    // TODO 5: Delete the video thumbnail from Cloudinary (optional but recommended)
+
+    // TODO 6: Delete the video file from Cloudinary (optional but recommended)
+
+    // TODO 7: Delete the video document from MongoDB
+
+    // TODO 8: Return a success response
+
+    if (mongoose.Types.ObjectId.isValid(videoId)) {
+        throw new apiError(400, "video not found")
+    }
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new apiError(400, "video is not found")
+    }
+
+    if(video.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(400, "owner is not logged in")
+    }
+
+    const video = await Video.findByIdAndDelete(videoId)
+    
+    if(!video) {
+        throw new apiError (400, "video is not delete successfully")
+    }
+
+    return res 
+    .status(200)
+    .json(
+        new apiResponse(
+            200,
+            video,
+            "video is not deleted"
+        )
+    )
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
